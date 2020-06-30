@@ -2,31 +2,25 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/black"
     tools:context=".MainActivity">
 
-    <ImageView
+    <com.facebook.drawee.view.SimpleDraweeView
         android:id="@+id/ivBackGround"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:adjustViewBounds="true"
-        android:scaleType="centerCrop"
-        android:src="@drawable/bg" />
+        android:background="@android:color/black" />
 
     <LinearLayout
-        android:id="@+id/llTitle"
-        android:layout_width="0dp"
+        android:id="@+id/llTop"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="20dp"
-        android:layout_marginEnd="20dp"
-        android:background="@drawable/round_translucent"
-        android:paddingStart="15dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="15dp"
-        android:paddingBottom="10dp"
-        app:layout_constraintEnd_toStartOf="@id/llCalendar"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -34,75 +28,85 @@
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="20dp"
+            android:background="@drawable/round_translucent"
             android:ellipsize="end"
             android:fontFamily="@font/ptsans_bold"
-            android:maxLines="3"
-            android:text="Portrait of NGC 281 ISS Fisheye"
+            android:maxLines="2"
+            android:paddingStart="15dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="15dp"
+            android:paddingBottom="10dp"
             android:textColor="@color/white"
             android:textSize="25sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            tools:text="Portrait of NGC 281 ISS Fisheye ISS Fisheye" />
+
+        <LinearLayout
+            android:id="@+id/llCalendar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/round_translucent"
+            android:clickable="true"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/ivCalendar"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_baseline_calendar_today_24" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/llCalendar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="20dp"
-        android:background="@drawable/round_translucent"
-        android:clickable="true"
-        android:gravity="center"
-        app:layout_constraintBottom_toBottomOf="@id/llTitle"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/llTitle">
-
-        <ImageView
-            android:id="@+id/ivCalendar"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_baseline_calendar_today_24" />
-
-    </LinearLayout>
-
-
-
-    <TextView
-        android:id="@+id/tvDescription"
-        android:layout_width="0dp"
+        android:id="@+id/llBottom"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="15dp"
-        android:background="@drawable/round_translucent"
-        android:fontFamily="@font/ptsans_regular"
-        android:maxLines="9"
-        android:paddingStart="15dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="15dp"
-        android:paddingBottom="10dp"
-        android:text="@string/dummy_para"
-        android:textColor="@color/white"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toStartOf="@id/llPlayZoom"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-    <LinearLayout
-        android:id="@+id/llPlayZoom"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="20dp"
-        android:background="@drawable/round_translucent"
-        android:clickable="true"
-        android:gravity="center"
-        app:layout_constraintBottom_toBottomOf="@id/tvDescription"
-        app:layout_constraintEnd_toEndOf="parent">
+        <LinearLayout
+            android:id="@+id/llPlayZoom"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="15dp"
+            android:background="@drawable/round_translucent"
+            android:clickable="true"
+            android:gravity="center">
 
-        <ImageView
-            android:id="@+id/ivPlayZoom"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:src="@drawable/ic_baseline_play_circle_outline_24" />
+            <ImageView
+                android:id="@+id/ivPlayZoom"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/ic_baseline_fullscreen_24" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvDescription"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="15dp"
+            android:background="@drawable/round_translucent"
+            android:fontFamily="@font/ptsans_regular"
+            android:maxLines="9"
+            android:paddingStart="15dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="15dp"
+            android:paddingBottom="10dp"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            tools:text="@string/dummy_para" />
 
     </LinearLayout>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
