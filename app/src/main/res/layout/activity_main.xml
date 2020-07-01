@@ -5,14 +5,22 @@
     android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clickable="true"
     android:background="@android:color/black"
     tools:context=".MainActivity">
+
+    <FrameLayout
+        android:id="@+id/youtubePlayer"
+        android:name="com.google.android.youtube.player.YouTubePlayerSupportFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <com.facebook.drawee.view.SimpleDraweeView
         android:id="@+id/ivBackGround"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:adjustViewBounds="true"
+        android:clickable="true"
         android:background="@android:color/black" />
 
     <LinearLayout
@@ -46,8 +54,8 @@
 
         <LinearLayout
             android:id="@+id/llCalendar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_marginStart="20dp"
             android:layout_marginTop="10dp"
             android:background="@drawable/round_translucent"
@@ -56,8 +64,8 @@
 
             <ImageView
                 android:id="@+id/ivCalendar"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:src="@drawable/ic_baseline_calendar_today_24" />
 
         </LinearLayout>
@@ -75,8 +83,8 @@
 
         <LinearLayout
             android:id="@+id/llPlayZoom"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_gravity="end"
             android:layout_marginEnd="15dp"
             android:background="@drawable/round_translucent"
@@ -85,8 +93,8 @@
 
             <ImageView
                 android:id="@+id/ivPlayZoom"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
                 android:src="@drawable/ic_baseline_fullscreen_24" />
 
         </LinearLayout>
@@ -108,5 +116,12 @@
             tools:text="@string/dummy_para" />
 
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/ivTransparentMask"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:src="@android:color/transparent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

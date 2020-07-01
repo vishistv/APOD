@@ -2,10 +2,12 @@ package com.vishistv.apod
 
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
+import android.content.pm.ActivityInfo
 import android.graphics.PointF
 import android.graphics.drawable.Animatable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.text.method.ScrollingMovementMethod
 import android.view.View
 import android.view.Window
@@ -19,13 +21,18 @@ import com.facebook.drawee.interfaces.DraweeController
 import com.facebook.imagepipeline.image.ImageInfo
 import com.facebook.imagepipeline.request.ImageRequest
 import com.facebook.imagepipeline.request.ImageRequestBuilder
+import com.google.android.youtube.player.YouTubeInitializationResult
+import com.google.android.youtube.player.YouTubePlayer
+import com.google.android.youtube.player.YouTubePlayerSupportFragment
 import com.vishistv.apod.datafiles.Apod
 import com.vishistv.apod.extension.getViewModel
+import com.vishistv.apod.extension.toast
 import com.vishistv.apod.util.AppUtil
 import com.vishistv.apod.util.Constants
 import com.vishistv.apod.util.Log
 import com.vishistv.apod.util.YoutubeUtil
 import kotlinx.android.synthetic.main.activity_main.*
+import java.lang.Exception
 
 
 class MainActivity :
@@ -34,9 +41,13 @@ class MainActivity :
     DatePickerDialog.OnDateSetListener {
 
     private lateinit var mViewModel: MainViewModel
+    private lateinit var mYouTubePlayerFragment: YouTubePlayerSupportFragment
 
     private var mIsTypeVideo: Boolean = false
     private var mIsFullScreen: Boolean = false
+    private var mYoutubePlayer: YouTubePlayer? = null
+
+    private var mVideoId: String? = null
 
     companion object {
         const val TAG = "MainActivity"
@@ -60,9 +71,18 @@ class MainActivity :
         mViewModel = getViewModel()
         mViewModel.fetchApod(null)
 
+        llPlayZoom.visibility = View.GONE
+        llCalendar.visibility = View.GONE
+
+        // Marked as error because no androidx support
+        mYouTubePlayerFragment = YouTubePlayerSupportFragment.newInstance()
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.youtubePlayer, mYouTubePlayerFragment).commit()
+
         llPlayZoom.setOnClickListener(this)
-        rootContainer.setOnClickListener(this)
         llCalendar.setOnClickListener(this)
+        ivBackGround.setOnClickListener(this)
+        ivTransparentMask.setOnClickListener(this)
 
         setObservers()
     }
@@ -71,17 +91,17 @@ class MainActivity :
         when (v) {
             llPlayZoom -> {
                 if (mIsTypeVideo) {
-
+                    switchFullScreen()
+                    mYoutubePlayer?.setFullscreen(true)
                 } else {
                     if (!mIsFullScreen) {
                         switchFullScreen()
                     }
                 }
             }
-            llCalendar -> {
-                AppUtil.showDatePickerDialog(this, this)
-            }
-            rootContainer -> {
+            llCalendar -> AppUtil.showDatePickerDialog(this, this)
+            ivTransparentMask,
+            ivBackGround -> {
                 if (mIsFullScreen) {
                     switchFullScreen()
                 }
@@ -91,109 +111,176 @@ class MainActivity :
 
     private fun setObservers() {
         mViewModel.getApod.observe(this, Observer { apod ->
-            when (apod.mediaType) {
-                Constants.MEDIA_TYPE_IMAGE -> {
-                    mIsTypeVideo = false
-                    updatePlayButton()
-                    showApodImageData(apod)
+            llPlayZoom.visibility = View.VISIBLE
+            llCalendar.visibility = View.VISIBLE
+            apod?.let {
+                when (apod.mediaType) {
+                    Constants.MEDIA_TYPE_IMAGE -> {
+                        mIsTypeVideo = false
+                        showApodImageData(apod)
+                    }
+                    Constants.MEDIA_TYPE_VIDEO -> {
+                        mIsTypeVideo = true
+                        showApodVideoData(apod)
+                    }
+                    else -> {
+                        toast(resources.getString(R.string.unsupported_format_error))
+                        mIsTypeVideo = false
+                    }
                 }
-                Constants.MEDIA_TYPE_VIDEO -> {
-                    mIsTypeVideo = true
-                    showApodVideoData(apod)
-                }
-                else -> {
-                    // role back to default
-                    mIsTypeVideo = false
-                }
+            } ?: run {
+                toast(resources.getString(R.string.generic_error))
+                AppUtil.hideProgressBar()
             }
         })
     }
 
     private fun showApodImageData(apod: Apod) {
-        tvTitle.text = apod.title
-        tvDescription.text = apod.description
+        try {
+            tvTitle.text = apod.title
+            tvDescription.text = apod.description
+            youtubePlayer.visibility = View.GONE
 
-        val focusPoint = PointF(0f, 0.5f)
+            val focusPoint = PointF(0f, 0.5f)
 
-        val request = ImageRequestBuilder.newBuilderWithSource(Uri.parse(apod.hdUrl))
-            .setProgressiveRenderingEnabled(true)
-            .build()
-        val controller: DraweeController = Fresco.newDraweeControllerBuilder()
-            .setLowResImageRequest(ImageRequest.fromUri(apod.url))
-            .setImageRequest(request)
-            .setControllerListener(object : ControllerListener<ImageInfo?> {
-                override fun onRelease(id: String?) {}
-                override fun onSubmit(id: String?, callerContext: Any?) {}
-                override fun onIntermediateImageSet(id: String?, imageInfo: ImageInfo?) {
-                    AppUtil.hideProgressBar()
-                }
+            val request = ImageRequestBuilder.newBuilderWithSource(Uri.parse(apod.hdUrl))
+                .setProgressiveRenderingEnabled(true)
+                .build()
+            val controller: DraweeController = Fresco.newDraweeControllerBuilder()
+                .setLowResImageRequest(ImageRequest.fromUri(apod.url))
+                .setImageRequest(request)
+                .setControllerListener(object : ControllerListener<ImageInfo?> {
+                    override fun onRelease(id: String?) {}
+                    override fun onSubmit(id: String?, callerContext: Any?) {}
+                    override fun onIntermediateImageSet(id: String?, imageInfo: ImageInfo?) {
+                        AppUtil.hideProgressBar()
+                    }
 
-                override fun onIntermediateImageFailed(id: String?, throwable: Throwable?) {
-                    AppUtil.hideProgressBar()
-                }
+                    override fun onIntermediateImageFailed(id: String?, throwable: Throwable?) {
+                        AppUtil.hideProgressBar()
+                    }
 
-                override fun onFailure(id: String?, throwable: Throwable?) {
-                    AppUtil.hideProgressBar()
-                }
+                    override fun onFailure(id: String?, throwable: Throwable?) {
+                        AppUtil.hideProgressBar()
+                    }
 
-                override fun onFinalImageSet(
-                    id: String?,
-                    imageInfo: ImageInfo?,
-                    animatable: Animatable?
-                ) {
-                    AppUtil.hideProgressBar()
-                }
-            })
-            .build()
+                    override fun onFinalImageSet(
+                        id: String?,
+                        imageInfo: ImageInfo?,
+                        animatable: Animatable?
+                    ) {
+                        AppUtil.hideProgressBar()
+                    }
+                })
+                .build()
 
-        ivBackGround
-            .hierarchy
-            .setActualImageFocusPoint(focusPoint)
-        ivBackGround
-            .controller = controller
+            ivBackGround
+                .hierarchy
+                .setActualImageFocusPoint(focusPoint)
+            ivBackGround
+                .controller = controller
+            updatePlayButton()
+        } catch (e: Exception) {
+            toast(resources.getString(R.string.generic_error))
+        }
     }
 
     private fun showApodVideoData(apod: Apod) {
-        tvTitle.text = apod.title
-        tvDescription.text = apod.description
+        try {
+            tvTitle.text = apod.title
+            tvDescription.text = apod.description
 
-        val url = YoutubeUtil.getThumbnail(apod.url)
-        val controller = Fresco
-            .newDraweeControllerBuilder()
-            .setImageRequest(ImageRequest.fromUri((Uri.parse(url))))
-            .setControllerListener(object : ControllerListener<ImageInfo?> {
-                override fun onRelease(id: String?) {}
-                override fun onSubmit(id: String?, callerContext: Any?) {}
-                override fun onIntermediateImageSet(id: String?, imageInfo: ImageInfo?) {
-                    AppUtil.hideProgressBar()
-                }
+            youtubePlayer.visibility = View.VISIBLE
 
-                override fun onIntermediateImageFailed(id: String?, throwable: Throwable?) {
-                    AppUtil.hideProgressBar()
-                }
+            mVideoId = YoutubeUtil.getYoutubeVideoIdFromUrl(apod.url)
 
-                override fun onFailure(id: String?, throwable: Throwable?) {
-                    AppUtil.hideProgressBar()
-                }
+            mVideoId?.let {
+                val url = YoutubeUtil.getThumbnail(it)
 
-                override fun onFinalImageSet(
-                    id: String?,
-                    imageInfo: ImageInfo?,
-                    animatable: Animatable?
-                ) {
-                    AppUtil.hideProgressBar()
-                }
-            })
-            .build()
-        ivBackGround.controller = controller
+                val controller = Fresco
+                    .newDraweeControllerBuilder()
+                    .setImageRequest(ImageRequest.fromUri((Uri.parse(url))))
+                    .setControllerListener(object : ControllerListener<ImageInfo?> {
+                        override fun onRelease(id: String?) {}
+                        override fun onSubmit(id: String?, callerContext: Any?) {}
+                        override fun onIntermediateImageSet(id: String?, imageInfo: ImageInfo?) {
+                            AppUtil.hideProgressBar()
+                        }
+
+                        override fun onIntermediateImageFailed(id: String?, throwable: Throwable?) {
+                            AppUtil.hideProgressBar()
+                        }
+
+                        override fun onFailure(id: String?, throwable: Throwable?) {
+                            AppUtil.hideProgressBar()
+                        }
+
+                        override fun onFinalImageSet(
+                            id: String?, imageInfo: ImageInfo?, animatable: Animatable?
+                        ) {
+                            AppUtil.hideProgressBar()
+                        }
+                    })
+                    .build()
+                ivBackGround.controller = controller
+                initializeYoutubePlayer()
+            }
+            updatePlayButton()
+        } catch (e: Exception) {
+            toast(resources.getString(R.string.generic_error))
+        }
+    }
+
+    private fun initializeYoutubePlayer() {
+        mYoutubePlayer?.let {
+            playVideo()
+        } ?: run {
+            // Marked as error because no androidx support
+            mYouTubePlayerFragment.initialize(
+                "AIzaSyDWiW7qTwWwX4Ur8-9GvI2CgoD25t1QsyY",
+                object : YouTubePlayer.OnInitializedListener {
+                    override fun onInitializationSuccess(provider: YouTubePlayer.Provider?,
+                                                         youTubePlayer: YouTubePlayer,
+                                                         wasRestored: Boolean) {
+                        if (!wasRestored) {
+                            mYoutubePlayer = youTubePlayer
+                            playVideo()
+                        }
+
+                        youTubePlayer.setPlayerStateChangeListener(object :
+                            YouTubePlayer.PlayerStateChangeListener {
+                            override fun onAdStarted() {}
+
+                            override fun onLoading() {}
+
+                            override fun onVideoStarted() {}
+
+                            override fun onLoaded(p0: String?) {
+                                mYoutubePlayer?.pause()
+                            }
+
+                            override fun onVideoEnded() {}
+
+                            override fun onError(p0: YouTubePlayer.ErrorReason?) {}
+                        })
+                    }
+
+                    override fun onInitializationFailure(provider: YouTubePlayer.Provider?,
+                                                         error: YouTubeInitializationResult?) {
+                        toast(resources.getString(R.string.generic_error))
+                    }
+                })
+        }
     }
 
     private fun switchFullScreen() {
         mIsFullScreen = if (mIsFullScreen) {
+            ivTransparentMask.visibility = View.GONE
             AppUtil.slideUp(llBottom, false)
             AppUtil.slideUp(llTop, true)
             false
         } else {
+            ivTransparentMask.visibility = View.VISIBLE
             AppUtil.slideDown(llTop, true)
             AppUtil.slideDown(llBottom, false)
             true
@@ -208,8 +295,23 @@ class MainActivity :
         }
     }
 
+    private fun playVideo() {
+        mYoutubePlayer?.let {
+            it.loadVideo(mVideoId)
+            it.setShowFullscreenButton(false)
+            it.play()
+        }
+    }
+
     override fun onBackPressed() {
-        if (mIsFullScreen) {
+        if (mIsFullScreen && mIsTypeVideo) {
+            mYoutubePlayer?.setFullscreen(false)
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            Handler()
+                .postDelayed({
+                    switchFullScreen()
+                }, 500)
+        } else if (mIsFullScreen && !mIsTypeVideo) {
             switchFullScreen()
         } else {
             super.onBackPressed()
@@ -217,16 +319,22 @@ class MainActivity :
     }
 
     override fun onDateSet(view: DatePicker?, year: Int, month: Int, dayOfMonth: Int) {
-        AppUtil.showProgressBar(this)
+        try {
+            AppUtil.showProgressBar(this)
+            llPlayZoom.visibility = View.GONE
+            llCalendar.visibility = View.GONE
+            val m = month + 1
+            val date = StringBuilder()
+            date.append(year).append("-")
+            if (month < 10) date.append("0")
+            date.append(m).append("-")
+            if (dayOfMonth < 10) date.append("0")
+            date.append(dayOfMonth)
 
-        val date = StringBuilder()
-        date.append(year).append("-")
-        if (month < 10) date.append("0")
-        date.append(month).append("-")
-        if (dayOfMonth < 10) date.append("0")
-        date.append(dayOfMonth)
-
-        mViewModel.fetchApod(date.toString())
-        Log.d(TAG, "🤡 $date")
+            mViewModel.fetchApod(date.toString())
+            Log.d(TAG, "🤡 $date")
+        } catch (e: Exception) {
+            toast(resources.getString(R.string.generic_error))
+        }
     }
 }

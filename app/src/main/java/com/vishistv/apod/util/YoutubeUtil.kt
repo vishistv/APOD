@@ -6,15 +6,11 @@ import java.util.regex.Pattern
 
 object YoutubeUtil {
 
-    fun getThumbnail() {
-        val s = "http://img.youtube.com/vi/GDFUdMvacI0/0.jpg"
+    fun getThumbnail(videoId: String): String? {
+        return "https://img.youtube.com/vi/$videoId/0.jpg"
     }
 
-    fun getThumbnail(videoUrl: String): String? {
-        return "https://img.youtube.com/vi/" + getYoutubeVideoIdFromUrl(videoUrl) + "/0.jpg"
-    }
-
-    private fun getYoutubeVideoIdFromUrl(inUrl: String): String? {
+    fun getYoutubeVideoIdFromUrl(inUrl: String): String? {
         var inUrl = inUrl
         inUrl = inUrl.replace("&feature=youtu.be", "")
         if (inUrl.toLowerCase().contains("youtu.be")) {

@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.vishistv.apod.datafiles.Apod
 import com.vishistv.apod.extension.apiRx
+import com.vishistv.apod.extension.toast
 import com.vishistv.apod.network.ApiRepository
 import com.vishistv.apod.network.Env
 import com.vishistv.apod.util.Constants
@@ -19,31 +20,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private val _getApod = MutableLiveData<Apod>()
-    private val _isFetchingApod = MutableLiveData<Boolean>()
 
     val getApod: LiveData<Apod> = _getApod
-    val isFetchingApod: LiveData<Boolean> = _isFetchingApod
 
     fun fetchApod(date: String?) {
         val option = mutableMapOf(Constants.API_KEY to Env.API_KEY)
 
-//        date?.let {
-        option[Constants.DATE] = "2016-11-05"
-//        }
+        date?.let {
+            option[Constants.DATE] = date
+        }
 
         apiRx<Apod> {
             request = ApiRepository.getApod(option)
-
             success { apod ->
-                _isFetchingApod.postValue(false)
                 _getApod.postValue(apod)
             }
             error {
-                _isFetchingApod.postValue(false)
+                _getApod.postValue(null)
                 try {
                     Log.d(TAG, "👺 ${it.localizedMessage}")
                 } catch (e: Exception) {
-
+                    _getApod.postValue(null)
                 }
             }
         }
