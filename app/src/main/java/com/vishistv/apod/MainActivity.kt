@@ -74,7 +74,7 @@ class MainActivity :
         llPlayZoom.visibility = View.GONE
         llCalendar.visibility = View.GONE
 
-        // Marked as error because no androidx support
+        /// Marked as error because no androidx support
         mYouTubePlayerFragment = YouTubePlayerSupportFragment.newInstance()
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.youtubePlayer, mYouTubePlayerFragment).commit()
