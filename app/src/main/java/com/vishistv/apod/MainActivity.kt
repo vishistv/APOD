@@ -50,7 +50,7 @@ class MainActivity :
     private var mVideoId: String? = null
 
     companion object {
-        const val TAG = "MainActivity"
+        const val TAG = "MainActivityf"
     }
 
     @SuppressLint("ClickableViewAccessibility")
